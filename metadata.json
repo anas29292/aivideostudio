@@ -1,0 +1,6 @@
+{
+  "name": "VoxReel Studio — AI Faceless Video Generator",
+  "description": "Studio produksi otomatis untuk membuat video faceless profesional (YouTube, Shorts, TikTok, Reels) lengkap dengan naskah AI, narasi suara, visual, subtitle, dan ekspor video.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

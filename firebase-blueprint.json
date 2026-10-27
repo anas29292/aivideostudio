@@ -1,0 +1,331 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Public profile metadata for a platform user without sensitive PII.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Firebase Auth UID of the user",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Display name of the user",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "photoURL": {
+          "type": "string",
+          "description": "Avatar URL",
+          "minLength": 0,
+          "maxLength": 500
+        },
+        "planTier": {
+          "type": "string",
+          "description": "Current subscription tier",
+          "enum": ["starter", "creator_pro", "agency_studio"]
+        },
+        "projectsCount": {
+          "type": "integer",
+          "description": "Number of generated projects"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Creation timestamp"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last update timestamp"
+        }
+      },
+      "required": ["uid", "displayName", "planTier", "projectsCount", "createdAt", "updatedAt"]
+    },
+    "SubscriptionRecord": {
+      "title": "SubscriptionRecord",
+      "description": "Isolated private billing and PII record for a user subscription.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the subscriber",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Subscriber email address (PII isolated)",
+          "minLength": 3,
+          "maxLength": 160
+        },
+        "planTier": {
+          "type": "string",
+          "description": "Active subscription tier",
+          "enum": ["starter", "creator_pro", "agency_studio"]
+        },
+        "status": {
+          "type": "string",
+          "description": "Billing status",
+          "enum": ["active", "trialing", "past_due", "canceled"]
+        },
+        "monthlyQuota": {
+          "type": "integer",
+          "description": "Monthly video generation quota"
+        },
+        "usedQuota": {
+          "type": "integer",
+          "description": "Videos generated in current cycle"
+        },
+        "amountIdr": {
+          "type": "integer",
+          "description": "Monthly subscription price in IDR"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Subscription start timestamp"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last subscription update timestamp"
+        }
+      },
+      "required": ["ownerId", "email", "planTier", "status", "monthlyQuota", "usedQuota", "amountIdr", "createdAt", "updatedAt"]
+    },
+    "VideoProject": {
+      "title": "VideoProject",
+      "description": "A faceless video project containing script, voice settings, and metadata.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "description": "UID of the creator who owns this project",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "authorName": {
+          "type": "string",
+          "description": "Display name of the project creator",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "title": {
+          "type": "string",
+          "description": "Project title",
+          "minLength": 3,
+          "maxLength": 140
+        },
+        "topic": {
+          "type": "string",
+          "description": "Original prompt or topic idea",
+          "minLength": 3,
+          "maxLength": 500
+        },
+        "platform": {
+          "type": "string",
+          "description": "Target social video platform",
+          "enum": ["youtube_shorts", "tiktok", "instagram_reels", "facebook_reels", "youtube_long", "marketing_ad"]
+        },
+        "aspectRatio": {
+          "type": "string",
+          "description": "Video frame aspect ratio",
+          "enum": ["9:16", "16:9", "1:1"]
+        },
+        "voiceName": {
+          "type": "string",
+          "description": "Selected Gemini TTS voice persona",
+          "enum": ["Kore", "Puck", "Charon", "Fenrir", "Zephyr"]
+        },
+        "visualStyle": {
+          "type": "string",
+          "description": "Visual aesthetic preset",
+          "minLength": 2,
+          "maxLength": 60
+        },
+        "language": {
+          "type": "string",
+          "description": "Script and narration language",
+          "enum": ["id", "en"]
+        },
+        "status": {
+          "type": "string",
+          "description": "Workflow status of the video project",
+          "enum": ["draft", "ready", "exported", "archived"]
+        },
+        "totalDurationSec": {
+          "type": "integer",
+          "description": "Total duration in seconds"
+        },
+        "scenesCount": {
+          "type": "integer",
+          "description": "Number of scenes in the video"
+        },
+        "hookText": {
+          "type": "string",
+          "description": "Opening viral hook sentence",
+          "minLength": 1,
+          "maxLength": 300
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Project creation timestamp"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last modification timestamp"
+        }
+      },
+      "required": [
+        "ownerId",
+        "authorName",
+        "title",
+        "topic",
+        "platform",
+        "aspectRatio",
+        "voiceName",
+        "visualStyle",
+        "language",
+        "status",
+        "totalDurationSec",
+        "scenesCount",
+        "hookText",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "SceneItem": {
+      "title": "SceneItem",
+      "description": "An individual scene within a faceless video project.",
+      "type": "object",
+      "properties": {
+        "projectId": {
+          "type": "string",
+          "description": "Parent project ID",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "ownerId": {
+          "type": "string",
+          "description": "Owner UID matching parent project",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "sceneIndex": {
+          "type": "integer",
+          "description": "Zero-based scene sequence index"
+        },
+        "narrationText": {
+          "type": "string",
+          "description": "Voiceover script for this scene",
+          "minLength": 1,
+          "maxLength": 600
+        },
+        "subtitleText": {
+          "type": "string",
+          "description": "Caption text displayed on screen",
+          "minLength": 1,
+          "maxLength": 300
+        },
+        "visualPrompt": {
+          "type": "string",
+          "description": "Visual composition description",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "durationSec": {
+          "type": "integer",
+          "description": "Duration of the scene in seconds"
+        },
+        "cameraMotion": {
+          "type": "string",
+          "description": "Ken Burns camera movement preset",
+          "enum": ["zoom_in", "zoom_out", "pan_left", "pan_right"]
+        },
+        "accentColor": {
+          "type": "string",
+          "description": "Hex color code for scene visual theme",
+          "minLength": 4,
+          "maxLength": 16
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Creation timestamp"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Update timestamp"
+        }
+      },
+      "required": [
+        "projectId",
+        "ownerId",
+        "sceneIndex",
+        "narrationText",
+        "subtitleText",
+        "visualPrompt",
+        "durationSec",
+        "cameraMotion",
+        "accentColor",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "AdminRecord": {
+      "title": "AdminRecord",
+      "description": "Trusted administrator marker document.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Admin UID",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "grantedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when admin role was granted"
+        }
+      },
+      "required": ["uid", "grantedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Public user profiles without sensitive PII."
+    },
+    "/users/{userId}/private/{docId}": {
+      "schema": { "$ref": "#/entities/SubscriptionRecord" },
+      "description": "Private subscription and PII billing info strictly isolated to owner and admin."
+    },
+    "/projects/{projectId}": {
+      "schema": { "$ref": "#/entities/VideoProject" },
+      "description": "Faceless video projects owned by creators and manageable by admins."
+    },
+    "/projects/{projectId}/scenes/{sceneId}": {
+      "schema": { "$ref": "#/entities/SceneItem" },
+      "description": "Subcollection of ordered video scenes belonging to a parent project."
+    },
+    "/admins/{adminId}": {
+      "schema": { "$ref": "#/entities/AdminRecord" },
+      "description": "Admin lookup collection for RBAC verification."
+    }
+  }
+}

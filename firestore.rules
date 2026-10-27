@@ -1,0 +1,254 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Pillar 1: Global Default-Deny Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Global Primitives
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isVerified() && (
+        request.auth.token.email == "anassutisna6@gmail.com" ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    // Validation Blueprint: UserProfile
+    function isValidUserProfile(data) {
+      return data.keys().hasAll(['uid', 'displayName', 'planTier', 'projectsCount', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['uid', 'displayName', 'photoURL', 'planTier', 'projectsCount', 'createdAt', 'updatedAt']) &&
+        data.uid is string && data.uid.size() >= 1 && data.uid.size() <= 128 && data.uid.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 80 &&
+        (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() <= 500)) &&
+        data.planTier is string && data.planTier.size() <= 30 && (data.planTier == 'starter' || data.planTier == 'creator_pro' || data.planTier == 'agency_studio') &&
+        data.projectsCount is int && data.projectsCount >= 0 && data.projectsCount <= 100000 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    // Validation Blueprint: SubscriptionRecord (PII Isolated)
+    function isValidSubscriptionRecord(data) {
+      return data.keys().hasAll(['ownerId', 'email', 'planTier', 'status', 'monthlyQuota', 'usedQuota', 'amountIdr', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['ownerId', 'email', 'planTier', 'status', 'monthlyQuota', 'usedQuota', 'amountIdr', 'createdAt', 'updatedAt']) &&
+        data.ownerId is string && data.ownerId.size() >= 1 && data.ownerId.size() <= 128 && data.ownerId.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.email is string && data.email.size() >= 3 && data.email.size() <= 160 &&
+        data.planTier is string && data.planTier.size() <= 30 && (data.planTier == 'starter' || data.planTier == 'creator_pro' || data.planTier == 'agency_studio') &&
+        data.status is string && data.status.size() <= 20 && (data.status == 'active' || data.status == 'trialing' || data.status == 'past_due' || data.status == 'canceled') &&
+        data.monthlyQuota is int && data.monthlyQuota >= 1 && data.monthlyQuota <= 10000 &&
+        data.usedQuota is int && data.usedQuota >= 0 && data.usedQuota <= 10000 &&
+        data.amountIdr is int && data.amountIdr >= 0 && data.amountIdr <= 100000000 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    // Validation Blueprint: VideoProject
+    function isValidVideoProject(data) {
+      return data.keys().hasAll([
+          'ownerId', 'authorName', 'title', 'topic', 'platform', 'aspectRatio',
+          'voiceName', 'visualStyle', 'language', 'status', 'totalDurationSec',
+          'scenesCount', 'hookText', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'ownerId', 'authorName', 'title', 'topic', 'platform', 'aspectRatio',
+          'voiceName', 'visualStyle', 'language', 'status', 'totalDurationSec',
+          'scenesCount', 'hookText', 'createdAt', 'updatedAt'
+        ]) &&
+        data.ownerId is string && data.ownerId.size() >= 1 && data.ownerId.size() <= 128 && data.ownerId.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.authorName is string && data.authorName.size() >= 1 && data.authorName.size() <= 80 &&
+        data.title is string && data.title.size() >= 3 && data.title.size() <= 140 &&
+        data.topic is string && data.topic.size() >= 3 && data.topic.size() <= 500 &&
+        data.platform is string && data.platform.size() <= 30 && (
+          data.platform == 'youtube_shorts' || data.platform == 'tiktok' ||
+          data.platform == 'instagram_reels' || data.platform == 'facebook_reels' ||
+          data.platform == 'youtube_long' || data.platform == 'marketing_ad'
+        ) &&
+        data.aspectRatio is string && data.aspectRatio.size() <= 10 && (
+          data.aspectRatio == '9:16' || data.aspectRatio == '16:9' || data.aspectRatio == '1:1'
+        ) &&
+        data.voiceName is string && data.voiceName.size() <= 20 && (
+          data.voiceName == 'Kore' || data.voiceName == 'Puck' ||
+          data.voiceName == 'Charon' || data.voiceName == 'Fenrir' || data.voiceName == 'Zephyr'
+        ) &&
+        data.visualStyle is string && data.visualStyle.size() >= 2 && data.visualStyle.size() <= 60 &&
+        data.language is string && data.language.size() == 2 && (data.language == 'id' || data.language == 'en') &&
+        data.status is string && data.status.size() <= 20 && (
+          data.status == 'draft' || data.status == 'ready' || data.status == 'exported' || data.status == 'archived'
+        ) &&
+        data.totalDurationSec is int && data.totalDurationSec >= 3 && data.totalDurationSec <= 1800 &&
+        data.scenesCount is int && data.scenesCount >= 1 && data.scenesCount <= 30 &&
+        data.hookText is string && data.hookText.size() >= 1 && data.hookText.size() <= 300 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    // Validation Blueprint: SceneItem
+    function isValidSceneItem(data) {
+      return data.keys().hasAll([
+          'projectId', 'ownerId', 'sceneIndex', 'narrationText', 'subtitleText',
+          'visualPrompt', 'durationSec', 'cameraMotion', 'accentColor', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'projectId', 'ownerId', 'sceneIndex', 'narrationText', 'subtitleText',
+          'visualPrompt', 'durationSec', 'cameraMotion', 'accentColor', 'createdAt', 'updatedAt'
+        ]) &&
+        data.projectId is string && data.projectId.size() >= 1 && data.projectId.size() <= 128 && data.projectId.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.ownerId is string && data.ownerId.size() >= 1 && data.ownerId.size() <= 128 && data.ownerId.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.sceneIndex is int && data.sceneIndex >= 0 && data.sceneIndex <= 30 &&
+        data.narrationText is string && data.narrationText.size() >= 1 && data.narrationText.size() <= 600 &&
+        data.subtitleText is string && data.subtitleText.size() >= 1 && data.subtitleText.size() <= 300 &&
+        data.visualPrompt is string && data.visualPrompt.size() >= 1 && data.visualPrompt.size() <= 500 &&
+        data.durationSec is int && data.durationSec >= 2 && data.durationSec <= 120 &&
+        data.cameraMotion is string && data.cameraMotion.size() <= 20 && (
+          data.cameraMotion == 'zoom_in' || data.cameraMotion == 'zoom_out' ||
+          data.cameraMotion == 'pan_left' || data.cameraMotion == 'pan_right'
+        ) &&
+        data.accentColor is string && data.accentColor.size() >= 4 && data.accentColor.size() <= 16 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    // Validation Blueprint: AdminRecord
+    function isValidAdminRecord(data) {
+      return data.keys().hasAll(['uid', 'grantedAt']) &&
+        data.keys().hasOnly(['uid', 'grantedAt']) &&
+        data.uid is string && data.uid.size() >= 1 && data.uid.size() <= 128 && data.uid.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.grantedAt is timestamp;
+    }
+
+    // Collection: /users/{userId}
+    match /users/{userId} {
+      allow get: if isSignedIn() && isValidId(userId) && (isOwner(userId) || isAdmin());
+      allow list: if isSignedIn() && (resource.data.uid == request.auth.uid || isAdmin());
+      allow create: if isVerified() && isValidId(userId) && isOwner(userId) &&
+        isValidUserProfile(incoming()) &&
+        incoming().uid == request.auth.uid &&
+        incoming().planTier == 'starter' &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+      allow update: if isVerified() && isValidId(userId) && isValidUserProfile(incoming()) &&
+        incoming().uid == existing().uid &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time && (
+          isAdmin() ||
+          (isOwner(userId) && incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'photoURL', 'projectsCount', 'planTier', 'updatedAt']))
+        );
+      allow delete: if isVerified() && isValidId(userId) && isAdmin();
+
+      // Subcollection: /users/{userId}/private/{docId} (PII & Billing Isolation)
+      match /private/{docId} {
+        allow get: if isSignedIn() && isValidId(userId) && isValidId(docId) && (isOwner(userId) || isAdmin());
+        allow list: if isSignedIn() && (resource.data.ownerId == request.auth.uid || isAdmin());
+        allow create: if isVerified() && isValidId(userId) && isValidId(docId) && (isOwner(userId) || isAdmin()) &&
+          isValidSubscriptionRecord(incoming()) &&
+          incoming().ownerId == userId &&
+          incoming().createdAt == request.time &&
+          incoming().updatedAt == request.time &&
+          exists(/databases/$(database)/documents/users/$(userId));
+        allow update: if isVerified() && isValidId(userId) && isValidId(docId) && isValidSubscriptionRecord(incoming()) &&
+          incoming().ownerId == existing().ownerId &&
+          incoming().createdAt == existing().createdAt &&
+          incoming().updatedAt == request.time && (
+            isAdmin() ||
+            (isOwner(userId) && incoming().diff(existing()).affectedKeys().hasOnly(['planTier', 'status', 'monthlyQuota', 'usedQuota', 'amountIdr', 'updatedAt']))
+          );
+        allow delete: if isVerified() && isValidId(userId) && isValidId(docId) && isAdmin();
+      }
+    }
+
+    // Collection: /projects/{projectId}
+    match /projects/{projectId} {
+      allow get: if isSignedIn() && isValidId(projectId) && (existing().ownerId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (resource.data.ownerId == request.auth.uid || isAdmin());
+      allow create: if isVerified() && isValidId(projectId) &&
+        isValidVideoProject(incoming()) &&
+        incoming().ownerId == request.auth.uid &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+      allow update: if isVerified() && isValidId(projectId) && isValidVideoProject(incoming()) &&
+        incoming().ownerId == existing().ownerId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time && (
+          isAdmin() ||
+          (existing().ownerId == request.auth.uid && existing().status != 'archived' &&
+            incoming().diff(existing()).affectedKeys().hasOnly([
+              'title', 'topic', 'platform', 'aspectRatio', 'voiceName',
+              'visualStyle', 'language', 'status', 'totalDurationSec',
+              'scenesCount', 'hookText', 'updatedAt'
+            ])
+          )
+        );
+      allow delete: if isVerified() && isValidId(projectId) && (existing().ownerId == request.auth.uid || isAdmin());
+
+      // Subcollection: /projects/{projectId}/scenes/{sceneId} (Master Gate Sync)
+      match /scenes/{sceneId} {
+        allow get: if isSignedIn() && isValidId(projectId) && isValidId(sceneId) && (
+          isAdmin() ||
+          get(/databases/$(database)/documents/projects/$(projectId)).data.ownerId == request.auth.uid
+        );
+        allow list: if isSignedIn() && (resource.data.ownerId == request.auth.uid || isAdmin());
+        allow create: if isVerified() && isValidId(projectId) && isValidId(sceneId) &&
+          isValidSceneItem(incoming()) &&
+          incoming().projectId == projectId &&
+          incoming().ownerId == request.auth.uid &&
+          incoming().createdAt == request.time &&
+          incoming().updatedAt == request.time &&
+          exists(/databases/$(database)/documents/projects/$(projectId)) &&
+          get(/databases/$(database)/documents/projects/$(projectId)).data.ownerId == request.auth.uid;
+        allow update: if isVerified() && isValidId(projectId) && isValidId(sceneId) && isValidSceneItem(incoming()) &&
+          incoming().projectId == existing().projectId &&
+          incoming().ownerId == existing().ownerId &&
+          incoming().createdAt == existing().createdAt &&
+          incoming().updatedAt == request.time && (
+            isAdmin() ||
+            (
+              existing().ownerId == request.auth.uid &&
+              get(/databases/$(database)/documents/projects/$(projectId)).data.ownerId == request.auth.uid &&
+              get(/databases/$(database)/documents/projects/$(projectId)).data.status != 'archived' &&
+              incoming().diff(existing()).affectedKeys().hasOnly([
+                'sceneIndex', 'narrationText', 'subtitleText', 'visualPrompt',
+                'durationSec', 'cameraMotion', 'accentColor', 'updatedAt'
+              ])
+            )
+          );
+        allow delete: if isVerified() && isValidId(projectId) && isValidId(sceneId) && (
+          isAdmin() ||
+          get(/databases/$(database)/documents/projects/$(projectId)).data.ownerId == request.auth.uid
+        );
+      }
+    }
+
+    // Collection: /admins/{adminId}
+    match /admins/{adminId} {
+      allow get: if isSignedIn() && isValidId(adminId) && (request.auth.uid == adminId || isAdmin());
+      allow list: if isAdmin();
+      allow create: if isAdmin() && isValidId(adminId) && isValidAdminRecord(incoming()) && incoming().grantedAt == request.time;
+      allow update: if isAdmin() && isValidId(adminId) && isValidAdminRecord(incoming()) && incoming().uid == existing().uid;
+      allow delete: if isAdmin() && isValidId(adminId);
+    }
+  }
+}
